@@ -84,7 +84,7 @@ export default function AdminDashboard() {
                 id="filterDate"
                 value={filterDate}
                 onChange={(e) => setFilterDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-50 bg-gray-300"
               />
             </div>
             <div>
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
                 value={filterStaff}
                 onChange={(e) => setFilterStaff(e.target.value)}
                 placeholder="Enter staff name"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-300"
               />
             </div>
           </Form>

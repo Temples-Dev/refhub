@@ -1,6 +1,14 @@
 import {  useState } from 'react';
-import { Form, useActionData } from '@remix-run/react';
+import { Form, Link, MetaFunction, useActionData } from '@remix-run/react';
 import type { ActionFunction } from '@remix-run/node';
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "REF HUB | SIGN UP", description: "Order Management for staff at work place" },
+    { name: "description", content: "Welcome to REF HUB!" },
+
+  ];
+};
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
@@ -15,7 +23,7 @@ export const action: ActionFunction = async ({ request }) => {
   return { error: 'Invalid credentials' };
 };
 
-export default function Login() {
+export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const actionData = useActionData<typeof action>();
@@ -28,6 +36,19 @@ export default function Login() {
           <p className="text-[#2c3e50] mt-2">Order Management System</p>
         </div>
         <Form method="post" className="space-y-6">
+        <div>
+            <label htmlFor="username" className="block text-sm font-medium text-[#2c3e50]">
+              Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              required
+              className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3498db] focus:border-transparent"
+              
+            />
+          </div>
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-[#2c3e50]">
               Email
@@ -38,8 +59,7 @@ export default function Login() {
               name="email"
               required
               className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3498db] focus:border-transparent"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              
             />
           </div>
           <div>
@@ -52,8 +72,7 @@ export default function Login() {
               name="password"
               required
               className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3498db] focus:border-transparent"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+             
             />
           </div>
           {actionData?.error && (
@@ -64,8 +83,13 @@ export default function Login() {
               type="submit"
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#3498db] hover:bg-[#2980b9] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3498db] transition duration-150 ease-in-out"
             >
-              Login
+              Register
             </button>
+          </div>
+          <div className='text-center '>
+            Already have an account? <Link className='text-[#3498db]' to="/" >
+              Login
+            </Link>
           </div>
         </Form>
       </div>
