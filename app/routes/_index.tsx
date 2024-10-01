@@ -1,23 +1,39 @@
-import {  useState } from 'react';
-import { Form, Link, useActionData } from '@remix-run/react';
-import type { ActionFunction } from '@remix-run/node';
+import { useState } from "react";
+import { Form, json, Link, redirect, useActionData } from "@remix-run/react";
+import type { ActionFunction } from "@remix-run/node";
+import axios from "axios";
+import { getSession, commitSession } from "~/services/session.server";
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
-  const email = formData.get('email');
-  const password = formData.get('password');
 
-  // TODO: Implement actual authentication logic
-  if (email === 'admin@refhub.com' && password === 'password') {
-    return { success: true };
+  const userData = Object.fromEntries(formData.entries());
+
+  const session = await getSession(request.headers.get("Cookie"));
+
+  try {
+    const response = await axios.post(
+      "http://localhost:8000/api/login/",
+      userData
+    );
+
+    if (response.status === 200) {
+      const user = response.data.user;
+
+      session.set("user", user);
+      return redirect("/order-entry", {
+        headers: {
+          "Set-Cookie": await commitSession(session),
+        },
+      });
+    }
+  } catch (error: any) {
+    const errorMsg = error.response?.data?.detail || "An error occurred";
+    return json({ error: errorMsg }, { status: error.response?.status || 500 });
   }
-
-  return { error: 'Invalid credentials' };
 };
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const actionData = useActionData<typeof action>();
 
   return (
@@ -28,8 +44,16 @@ export default function Login() {
           <p className="text-[#2c3e50] mt-2">Order Management System</p>
         </div>
         <Form method="post" className="space-y-6">
+          {actionData?.error && (
+            <div className="bg-[#e74c3c] text-white p-3 rounded-md text-sm">
+              {actionData.error}
+            </div>
+          )}
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-[#2c3e50]">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-[#2c3e50]"
+            >
               Email
             </label>
             <input
@@ -38,12 +62,13 @@ export default function Login() {
               name="email"
               required
               className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3498db] focus:border-transparent"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-[#2c3e50]">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-[#2c3e50]"
+            >
               Password
             </label>
             <input
@@ -52,13 +77,9 @@ export default function Login() {
               name="password"
               required
               className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#3498db] focus:border-transparent"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
-          {actionData?.error && (
-            <div className="bg-[#e74c3c] text-white p-3 rounded-md text-sm">{actionData.error}</div>
-          )}
+
           <div>
             <button
               type="submit"
@@ -67,8 +88,9 @@ export default function Login() {
               Login
             </button>
           </div>
-          <div className='text-center '>
-            Don't have an account? <Link className='text-[#3498db]' to="/signup" >
+          <div className="text-center ">
+            Don't have an account?{" "}
+            <Link className="text-[#3498db]" to="/signup">
               Register
             </Link>
           </div>

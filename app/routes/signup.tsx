@@ -1,6 +1,6 @@
-import {  useState } from 'react';
-import { Form, Link, MetaFunction, useActionData } from '@remix-run/react';
-import type { ActionFunction } from '@remix-run/node';
+import { Form, Link, MetaFunction, useActionData,redirect ,json } from '@remix-run/react';
+import type { ActionFunction,  } from '@remix-run/node';
+import axios from 'axios';
 
 export const meta: MetaFunction = () => {
   return [
@@ -12,20 +12,29 @@ export const meta: MetaFunction = () => {
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
-  const email = formData.get('email');
-  const password = formData.get('password');
+ 
+  const userData = Object.fromEntries(formData.entries())
 
-  // TODO: Implement actual authentication logic
-  if (email === 'admin@refhub.com' && password === 'password') {
-    return { success: true };
+  console.log(userData)
+
+  
+  try {
+    const response = await axios.post('http://localhost:8000/api/signup/', userData);
+
+    if (response.status === 201) {
+      return redirect('/'); // Redirect to login after successful registration
+    }
+  } catch (error:any) {
+    const errorMsg = error.response?.data?.detail || 'An error occurred';
+    return json({ error: errorMsg }, { status: error.response?.status || 500 });
   }
 
-  return { error: 'Invalid credentials' };
+
+ 
 };
 
 export default function Signup() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+ 
   const actionData = useActionData<typeof action>();
 
   return (
@@ -36,6 +45,9 @@ export default function Signup() {
           <p className="text-[#2c3e50] mt-2">Order Management System</p>
         </div>
         <Form method="post" className="space-y-6">
+        {actionData?.error && (
+            <div className="bg-[#e74c3c] text-white p-3 rounded-md text-sm">{actionData.error}</div>
+          )}
         <div>
             <label htmlFor="username" className="block text-sm font-medium text-[#2c3e50]">
               Username
@@ -75,9 +87,7 @@ export default function Signup() {
              
             />
           </div>
-          {actionData?.error && (
-            <div className="bg-[#e74c3c] text-white p-3 rounded-md text-sm">{actionData.error}</div>
-          )}
+         
           <div>
             <button
               type="submit"
