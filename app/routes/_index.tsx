@@ -18,9 +18,11 @@ export const action: ActionFunction = async ({ request }) => {
     );
 
     if (response.status === 200) {
-      const user = response.data.user;
+      const {user, accessToken, refresh} = response.data;
 
       session.set("user", user);
+      session.set("accessToken", accessToken);
+      session.set("refresh", refresh);
       return redirect("/order-entry", {
         headers: {
           "Set-Cookie": await commitSession(session),

@@ -23,26 +23,32 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export async function action({ request }: ActionFunctionArgs) {
+  const session = await getSession(request.headers.get("Cookie"));
+  const accessToken = session.get("accessToken");
+
   const formData = await request.formData();
 
   const orderData = Object.fromEntries(formData.entries());
 
   const parsedItems = JSON.parse(orderData.items as string);
 
-   
-   const sanitizedItems = parsedItems.map((item: any) => {
-    const { id, ...rest } = item; 
-    return rest; 
+  const sanitizedItems = parsedItems.map((item: any) => {
+    const { id, ...rest } = item;
+    return rest;
   });
+
+  const data = { items: sanitizedItems };
 
   try {
     const response = await axios.post(
       `http://localhost:8000/api/orders/`,
+      data,
       {
-        items: sanitizedItems, // without the id field
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       }
     );
-
 
     return json({
       message: "Order submitted successfully",
