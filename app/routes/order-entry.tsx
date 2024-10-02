@@ -1,20 +1,60 @@
 import { useState } from "react";
-import { Form, redirect, json, useLoaderData } from "@remix-run/react";
+import {
+  Form,
+  redirect,
+  json,
+  useLoaderData,
+  useActionData,
+} from "@remix-run/react";
 
 import { getSession } from "~/services/session.server";
-import { LoaderFunctionArgs } from "@remix-run/node";
+import { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+import axios from "axios";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const session = await getSession(request.headers.get("Cookie"));
   const user = session.get("user");
 
-  
   if (!user) {
     return redirect("/");
   }
 
   return json({ user });
 };
+
+export async function action({ request }: ActionFunctionArgs) {
+  const formData = await request.formData();
+
+  const orderData = Object.fromEntries(formData.entries());
+
+  const parsedItems = JSON.parse(orderData.items as string);
+
+   
+   const sanitizedItems = parsedItems.map((item: any) => {
+    const { id, ...rest } = item; 
+    return rest; 
+  });
+
+  try {
+    const response = await axios.post(
+      `http://localhost:8000/api/orders/`,
+      {
+        items: sanitizedItems, // without the id field
+      }
+    );
+
+
+    return json({
+      message: "Order submitted successfully",
+      serverResponse: response.data,
+    });
+  } catch (error: any) {
+    return json({
+      message: "Error submitting order",
+      error: error.response ? error.response.data : error.message,
+    });
+  }
+}
 
 type Item = {
   id: number;
@@ -26,10 +66,10 @@ type Item = {
 const TRANSPORTATION_FEE = 10; // Fixed transportation fee
 
 export default function OrderEntry() {
+  const { user } = useLoaderData<typeof loader>();
+  const data = useActionData<typeof action>();
 
-    const { user} = useLoaderData<typeof loader>();
-
-    console.log(user)
+  console.log(user, data?.message);
 
   const [items, setItems] = useState<Item[]>([]);
   const [newItem, setNewItem] = useState<Item>({
@@ -64,7 +104,7 @@ export default function OrderEntry() {
         <div className="px-4 py-5 sm:p-6">
           <h2 className="font-bold py-4 text-2xl">Welcome, {user as string}</h2>
           <h1 className="text-3xl font-bold text-[#2c3e50] mb-6">New Order</h1>
-          <Form className="space-y-6">
+          <div className="space-y-6">
             <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-3">
                 <label
@@ -143,61 +183,68 @@ export default function OrderEntry() {
                 {showPreview ? "Hide Preview" : "Show Preview"}
               </button>
             </div>
-          </Form>
 
-          {showPreview && items.length > 0 && (
-            <div className="mt-8 bg-gray-50 p-4 rounded-md">
-              <h2 className="text-lg font-medium text-[#2c3e50] mb-4">
-                Order Preview
-              </h2>
-              <ul className="divide-y divide-gray-200">
-                {items.map((item) => (
-                  <li
-                    key={item.id}
-                    className="py-4 flex justify-between items-center"
-                  >
-                    <div>
-                      <p className="text-sm font-medium text-[#2c3e50]">
-                        {item.name}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        ${item.price.toFixed(2)} x {item.quantity}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.id)}
-                      className="text-[#e74c3c] hover:text-[#c0392b] focus:outline-none transition duration-150 ease-in-out"
+            {showPreview && items.length > 0 && (
+              <div className="mt-8 bg-gray-50 p-4 rounded-md">
+                <h2 className="text-lg font-medium text-[#2c3e50] mb-4">
+                  Order Preview
+                </h2>
+                <ul className="divide-y divide-gray-200">
+                  {items.map((item) => (
+                    <li
+                      key={item.id}
+                      className="py-4 flex justify-between items-center"
                     >
-                      Remove
+                      <div>
+                        <p className="text-sm font-medium text-[#2c3e50]">
+                          {item.name}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          ${item.price.toFixed(2)} x {item.quantity}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.id)}
+                        className="text-[#e74c3c] hover:text-[#c0392b] focus:outline-none transition duration-150 ease-in-out"
+                      >
+                        Remove
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-4 flex justify-between items-center">
+                  <p className="text-sm text-[#2c3e50]">Transportation Fee:</p>
+                  <p className="text-sm font-medium text-[#2c3e50]">
+                    ${TRANSPORTATION_FEE.toFixed(2)}
+                  </p>
+                </div>
+                <div className="mt-4 flex justify-between items-center">
+                  <p className="text-lg font-medium text-[#2c3e50]">
+                    Total Amount:
+                  </p>
+                  <p className="text-lg font-bold text-[#2c3e50]">
+                    ${calculateTotal().toFixed(2)}
+                  </p>
+                </div>
+                <div className="mt-6">
+                  <Form method="post">
+                    <input
+                      type="hidden"
+                      name="items"
+                      value={JSON.stringify(items)}
+                    />
+                    <button
+                      type="submit"
+                      className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#3498db] hover:bg-[#2980b9] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3498db] transition duration-150 ease-in-out"
+                    >
+                      Submit Order
                     </button>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-4 flex justify-between items-center">
-                <p className="text-sm text-[#2c3e50]">Transportation Fee:</p>
-                <p className="text-sm font-medium text-[#2c3e50]">
-                  ${TRANSPORTATION_FEE.toFixed(2)}
-                </p>
+                  </Form>
+                </div>
               </div>
-              <div className="mt-4 flex justify-between items-center">
-                <p className="text-lg font-medium text-[#2c3e50]">
-                  Total Amount:
-                </p>
-                <p className="text-lg font-bold text-[#2c3e50]">
-                  ${calculateTotal().toFixed(2)}
-                </p>
-              </div>
-              <div className="mt-6">
-                <button
-                  type="submit"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#3498db] hover:bg-[#2980b9] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#3498db] transition duration-150 ease-in-out"
-                >
-                  Submit Order
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
